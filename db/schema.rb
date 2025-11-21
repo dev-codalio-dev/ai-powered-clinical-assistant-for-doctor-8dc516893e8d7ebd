@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_21_172455) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_21_172551) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -73,6 +73,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_21_172455) do
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
   end
 
+  create_table "call_recordings", force: :cascade do |t|
+    t.string "audio_file_url", null: false
+    t.datetime "recording_date", null: false
+    t.integer "duration", null: false
+    t.bigint "patient_id", null: false
+    t.bigint "caregiver_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["caregiver_id"], name: "index_call_recordings_on_caregiver_id"
+    t.index ["patient_id"], name: "index_call_recordings_on_patient_id"
+  end
+
   create_table "friendly_id_slugs", force: :cascade do |t|
     t.string "slug", null: false
     t.integer "sluggable_id", null: false
@@ -89,6 +101,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_21_172455) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "patients", force: :cascade do |t|
+    t.string "first_name", null: false
+    t.string "last_name", null: false
+    t.date "date_of_birth"
+    t.string "phone_number"
+    t.text "address"
+    t.bigint "caregiver_id", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["caregiver_id"], name: "index_patients_on_caregiver_id"
+    t.index ["organization_id"], name: "index_patients_on_organization_id"
   end
 
   create_table "roles", force: :cascade do |t|
@@ -239,6 +265,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_21_172455) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "summaries", force: :cascade do |t|
+    t.text "summary_text", null: false
+    t.datetime "generation_date", null: false
+    t.bigint "transcript_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["transcript_id"], name: "index_summaries_on_transcript_id"
+  end
+
+  create_table "transcripts", force: :cascade do |t|
+    t.text "transcript_text", null: false
+    t.datetime "generation_date", null: false
+    t.bigint "call_recording_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["call_recording_id"], name: "index_transcripts_on_call_recording_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "provider", default: "email", null: false
     t.string "uid", default: "", null: false
@@ -301,12 +345,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_21_172455) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "call_recordings", "patients"
+  add_foreign_key "call_recordings", "users", column: "caregiver_id"
+  add_foreign_key "patients", "organizations"
+  add_foreign_key "patients", "users", column: "caregiver_id"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "summaries", "transcripts"
+  add_foreign_key "transcripts", "call_recordings"
   add_foreign_key "users_role_invites", "organizations"
   add_foreign_key "users_role_invites", "roles"
   add_foreign_key "users_roles", "organizations"
